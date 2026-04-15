@@ -1,118 +1,132 @@
--- [[ BSS ADVANCED TRADE UTILITY ]] --
--- Features: Inventory Scanning, Draggable UI, Quick-Swap
-
+-- ==========================================
+-- 🛠️ BSS INVENTORY SCANNER (COMPONENT A)
+-- ==========================================
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- 1. UTILITY: FINDING THE DATA
--- BSS stores item data in specific tables. This function attempts to find them.
-local function getInventoryItems()
-    local items = {}
-    -- BSS often stores tradeable items in a 'Stickers' or 'Beequips' folder 
-    -- located within the Player's 'CoreStats' or 'PlayerGui' trade window.
-    local stickerData = LocalPlayer:FindFirstChild("CoreStats") and LocalPlayer.CoreStats:FindFirstChild("Stickers")
-    
-    if stickerData then
-        for _, item in pairs(stickerData:GetChildren()) do
-            -- item.Name is the Display Name, item.Value is usually the GUID
-            table.insert(items, {Name = item.Name, ID = item.Value})
-        end
-    else
-        -- Fallback: Scanning the Trade UI for loaded item IDs
-        local tradeGui = LocalPlayer.PlayerGui:FindFirstChild("TradeGui", true)
-        if tradeGui then
-            -- This logic would iterate through the UI icons to pull ID metadata
-            print("Scanning Trade UI for Item GUIDs...")
-        end
-    end
-    return items
-end
-
--- 2. THE SWAP ENGINE
-local TradeRemote = ReplicatedStorage:FindFirstChild("StickerTradeRequest", true)
-
-local function executeSwap(rareID, junkID)
-    if not TradeRemote then return end
-    
-    -- Fast sequence to bypass visual updates
-    TradeRemote:FireServer("RemoveItem", rareID)
-    task.wait(0.05)
-    TradeRemote:FireServer("AddItem", junkID)
-    TradeRemote:FireServer("AcceptTrade")
-end
-
--- 3. THE INTERFACE
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BSS_Smart_Trade"
-ScreenGui.Parent = game:GetService("CoreGui")
-
-local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 220, 0, 150)
-Main.Position = UDim2.new(0.5, -110, 0.4, 0)
-Main.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-Main.Draggable = true
-Main.Active = true
-Main.Parent = ScreenGui
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Text = "AUTO-SCAN SWAPPER"
-Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Parent = Main
-
-local RareLabel = Instance.new("TextLabel")
-RareLabel.Size = UDim2.new(1, -20, 0, 20)
-RareLabel.Position = UDim2.new(0, 10, 0, 35)
-RareLabel.Text = "Rare: [None Selected]"
-RareLabel.TextColor3 = Color3.new(0.7, 1, 0.7)
-RareLabel.BackgroundTransparency = 1
-RareLabel.Parent = Main
-
-local JunkLabel = Instance.new("TextLabel")
-JunkLabel.Size = UDim2.new(1, -20, 0, 20)
-JunkLabel.Position = UDim2.new(0, 10, 0, 55)
-JunkLabel.Text = "Junk: [None Selected]"
-JunkLabel.TextColor3 = Color3.new(1, 0.7, 0.7)
-JunkLabel.BackgroundTransparency = 1
-JunkLabel.Parent = Main
-
-local ScanBtn = Instance.new("TextButton")
-ScanBtn.Size = UDim2.new(0, 200, 0, 30)
-ScanBtn.Position = UDim2.new(0, 10, 0, 80)
-ScanBtn.Text = "SCAN INVENTORY"
-ScanBtn.Parent = Main
-
-local ActionBtn = Instance.new("TextButton")
-ActionBtn.Size = UDim2.new(0, 200, 0, 30)
-ActionBtn.Position = UDim2.new(0, 10, 0, 115)
-ActionBtn.Text = "EXECUTE QUICK-SWAP"
-ActionBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
-ActionBtn.Parent = Main
-
--- 4. LOGIC CONNECTIONS
-local selectedRare = nil
-local selectedJunk = nil
-
-ScanBtn.MouseButton1Click:Connect(function()
-    local inventory = getInventoryItems()
-    if #inventory > 0 then
-        -- For this demo, we automatically pick the first and last items
-        -- In a full version, this would open a dropdown list
-        selectedRare = inventory[1].ID
-        selectedJunk = inventory[#inventory].ID
-        
-        RareLabel.Text = "Rare: " .. inventory[1].Name
-        JunkLabel.Text = "Junk: " .. inventory[#inventory].Name
-        print("Inventory Scanned. Items Locked.")
-    else
-        RareLabel.Text = "No items found. Open Trade first!"
+-- 1. Setup the UI
+local GUI_NAME = "BSS_Data_Reader"
+pcall(function()
+    local target = gethui and gethui() or CoreGui
+    if target:FindFirstChild(GUI_NAME) then
+        target[GUI_NAME]:Destroy()
     end
 end)
 
-ActionBtn.MouseButton1Click:Connect(function()
-    if selectedRare and selectedJunk then
-        executeSwap(selectedRare, selectedJunk)
+local sg = Instance.new("ScreenGui")
+sg.Name = GUI_NAME
+local success = pcall(function() sg.Parent = gethui() end)
+if not success then sg.Parent = CoreGui end
+
+local mainFrame = Instance.new("Frame", sg)
+mainFrame.Size = UDim2.new(0, 300, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+mainFrame.Active = true
+mainFrame.Draggable = true
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
+
+-- Header
+local header = Instance.new("TextLabel", mainFrame)
+header.Size = UDim2.new(1, 0, 0, 40)
+header.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+header.TextColor3 = Color3.fromRGB(255, 255, 255)
+header.Font = Enum.Font.GothamBold
+header.TextSize = 16
+header.Text = "🔍 Item GUID Scanner"
+Instance.new("UICorner", header).CornerRadius = UDim.new(0, 8)
+
+local closeBtn = Instance.new("TextButton", header)
+closeBtn.Size = UDim2.new(0, 40, 1, 0)
+closeBtn.Position = UDim2.new(1, -40, 0, 0)
+closeBtn.BackgroundTransparency = 1
+closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Text = "X"
+closeBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
+
+-- Scan Button
+local scanBtn = Instance.new("TextButton", mainFrame)
+scanBtn.Size = UDim2.new(1, -20, 0, 35)
+scanBtn.Position = UDim2.new(0, 10, 0, 50)
+scanBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+scanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+scanBtn.Font = Enum.Font.GothamBold
+scanBtn.Text = "SCAN INVENTORY"
+Instance.new("UICorner", scanBtn).CornerRadius = UDim.new(0, 6)
+
+-- Scrolling List
+local scrollFrame = Instance.new("ScrollingFrame", mainFrame)
+scrollFrame.Size = UDim2.new(1, -20, 1, -100)
+scrollFrame.Position = UDim2.new(0, 10, 0, 95)
+scrollFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.ScrollBarThickness = 6
+Instance.new("UICorner", scrollFrame).CornerRadius = UDim.new(0, 6)
+
+local layout = Instance.new("UIListLayout", scrollFrame)
+layout.Padding = UDim.new(0, 5)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- 2. The Extraction Logic
+local function addListItem(displayName, guid)
+    local itemFrame = Instance.new("Frame", scrollFrame)
+    itemFrame.Size = UDim2.new(1, -10, 0, 40)
+    itemFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0, 4)
+    
+    local nameLbl = Instance.new("TextLabel", itemFrame)
+    nameLbl.Size = UDim2.new(1, -10, 0.5, 0)
+    nameLbl.Position = UDim2.new(0, 5, 0, 0)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.TextColor3 = Color3.fromRGB(255, 200, 100)
+    nameLbl.Font = Enum.Font.GothamSemibold
+    nameLbl.TextSize = 14
+    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+    nameLbl.Text = displayName
+    
+    local guidLbl = Instance.new("TextLabel", itemFrame)
+    guidLbl.Size = UDim2.new(1, -10, 0.5, 0)
+    guidLbl.Position = UDim2.new(0, 5, 0.5, 0)
+    guidLbl.BackgroundTransparency = 1
+    guidLbl.TextColor3 = Color3.fromRGB(150, 150, 150)
+    guidLbl.Font = Enum.Font.Code
+    guidLbl.TextSize = 10
+    guidLbl.TextXAlignment = Enum.TextXAlignment.Left
+    guidLbl.Text = "UUID: " .. tostring(guid)
+end
+
+scanBtn.MouseButton1Click:Connect(function()
+    -- Clear old results
+    for _, child in pairs(scrollFrame:GetChildren()) do
+        if child:IsA("Frame") then child:Destroy() end
     end
+    
+    scanBtn.Text = "SCANNING..."
+    
+    -- In BSS, Bequips and Stickers are usually tracked in the player's hidden stat folders.
+    -- This looks for standard Value objects storing GUIDs.
+    local beequipsFolder = LocalPlayer:FindFirstChild("Beequips")
+    local stickersFolder = LocalPlayer:FindFirstChild("Stickers") -- Or wherever the game stores them
+    
+    local foundItems = 0
+    
+    if beequipsFolder then
+        for _, item in pairs(beequipsFolder:GetChildren()) do
+            -- Assuming the Name is the Item ID and the Value holds the UUID string or table
+            addListItem("Beequip: " .. item.Name, item.Value or "No-UUID-Found")
+            foundItems = foundItems + 1
+        end
+    end
+    
+    -- If folders aren't standard, we scan ReplicatedStorage/Player memory (Example placeholder)
+    if foundItems == 0 then
+        addListItem("System", "Could not locate standard folders. Using fallback...")
+        -- You would expand this to tap into Onett's specific Client tables using getgc() if needed
+    end
+    
+    task.wait(0.5)
+    scanBtn.Text = "SCAN INVENTORY"
 end)
