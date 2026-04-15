@@ -1,9 +1,9 @@
 -- ==========================================
--- 🔮 BSS ULTIMATE WAX PREDICTOR
+-- 👑 BSS MASTER WAX HUB (Live Memory + Simulator)
 -- ==========================================
 local CoreGui = game:GetService("CoreGui")
 
-local GUI_NAME = "BSS_Wax_Predictor"
+local GUI_NAME = "BSS_Master_Wax_Hub"
 pcall(function()
     local target = gethui and gethui() or CoreGui
     if target:FindFirstChild(GUI_NAME) then target[GUI_NAME]:Destroy() end
@@ -14,8 +14,8 @@ sg.Name = GUI_NAME
 
 -- Mobile Friendly UI Dimensions
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 320, 0, 420)
-mainFrame.Position = UDim2.new(0.5, -160, 0.5, -210)
+mainFrame.Size = UDim2.new(0, 320, 0, 440)
+mainFrame.Position = UDim2.new(0.5, -160, 0.5, -220)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -27,7 +27,7 @@ header.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
 header.Font = Enum.Font.GothamBold
 header.TextSize = 14
-header.Text = " 🔮 Wax Predictor & Simulator"
+header.Text = " 👑 Master Wax Hub & Predictor"
 header.TextXAlignment = Enum.TextXAlignment.Left
 Instance.new("UICorner", header).CornerRadius = UDim.new(0, 8)
 
@@ -42,7 +42,7 @@ closeBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
 
 -- Data Display Area
 local displayFrame = Instance.new("Frame", mainFrame)
-displayFrame.Size = UDim2.new(1, -20, 0, 150)
+displayFrame.Size = UDim2.new(1, -20, 0, 160)
 displayFrame.Position = UDim2.new(0, 10, 0, 45)
 displayFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 Instance.new("UICorner", displayFrame).CornerRadius = UDim.new(0, 6)
@@ -56,13 +56,14 @@ infoText.TextXAlignment = Enum.TextXAlignment.Left
 infoText.TextYAlignment = Enum.TextYAlignment.Top
 infoText.Font = Enum.Font.Code
 infoText.TextSize = 13
+infoText.RichText = true
 infoText.TextWrapped = true
-infoText.Text = "Select a Wax to see its hidden stats and predict outcomes."
+infoText.Text = "Initializing Live Memory Scan..."
 
 -- Log Area for Simulation
 local logScroll = Instance.new("ScrollingFrame", mainFrame)
 logScroll.Size = UDim2.new(1, -20, 1, -260)
-logScroll.Position = UDim2.new(0, 10, 0, 205)
+logScroll.Position = UDim2.new(0, 10, 0, 215)
 logScroll.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 logScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 logScroll.ScrollBarThickness = 4
@@ -81,21 +82,19 @@ local function addLog(text, color)
     lbl.TextSize = 12
     lbl.Text = " " .. text
     
-    -- Auto-scroll to bottom
     logScroll.CanvasPosition = Vector2.new(0, logScroll.AbsoluteWindowSize.Y + 1000)
 end
 
 -- ==========================================
--- 📚 THE MASTER DATA DICTIONARY (What we learned!)
+-- 🧠 DYNAMIC DATA DICTIONARY
 -- ==========================================
 local MasterStats = {
-    [11] = "White Pollen",
-    [12] = "Red Pollen",
-    [13] = "Blue Pollen",
-    [16] = "Bee Ability Pollen"
+    [11] = "Scanning...",
+    [12] = "Scanning...",
+    [13] = "Scanning...",
+    [16] = "Scanning..."
 }
 
--- Reconstructing Onett's hidden Wax table
 local WaxData = {
     ["Soft Wax"] = { Success = 1.00, Destroy = false, Multiplier = 1.0 },
     ["Hard Wax"] = { Success = 0.60, Destroy = false, Multiplier = 1.5 },
@@ -103,12 +102,36 @@ local WaxData = {
     ["Caustic Wax"] = { Success = 0.25, Destroy = true, Multiplier = 3.0 }
 }
 
-local selectedWax = nil
+local selectedWax = "Soft Wax"
+local waxTypesList = {"Soft Wax", "Hard Wax", "Swirled Wax", "Caustic Wax"}
+local currentWaxIndex = 1
+
+local function updateDisplay()
+    local data = WaxData[selectedWax]
+    
+    local txt = "🧪 **" .. selectedWax .. "**\n\n"
+    txt = txt .. "Success Rate: <font color='rgb(100,255,100)'>" .. (data.Success * 100) .. "%</font>\n"
+    
+    if data.Destroy then
+        txt = txt .. "Risk: <font color='rgb(255,50,50)'>DESTROYS BEEQUIP ON FAIL!</font>\n"
+    else
+        txt = txt .. "Risk: <font color='rgb(150,150,150)'>Safe (Does not destroy)</font>\n"
+    end
+    
+    txt = txt .. "Power Tier: " .. data.Multiplier .. "x\n\n"
+    txt = txt .. "<b>Live Decoded Stats (from RAM):</b>\n"
+    txt = txt .. "- " .. tostring(MasterStats[11]) .. "\n"
+    txt = txt .. "- " .. tostring(MasterStats[12]) .. "\n"
+    txt = txt .. "- " .. tostring(MasterStats[13]) .. "\n"
+    txt = txt .. "- " .. tostring(MasterStats[16])
+    
+    infoText.Text = txt
+end
 
 -- Buttons
 local btnContainer = Instance.new("Frame", mainFrame)
 btnContainer.Size = UDim2.new(1, -20, 0, 30)
-btnContainer.Position = UDim2.new(0, 10, 1, -45)
+btnContainer.Position = UDim2.new(0, 10, 1, -40)
 btnContainer.BackgroundTransparency = 1
 
 local selectBtn = Instance.new("TextButton", btnContainer)
@@ -118,7 +141,7 @@ selectBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 selectBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 selectBtn.Font = Enum.Font.GothamBold
 selectBtn.TextSize = 12
-selectBtn.Text = "Cycle Wax Type"
+selectBtn.Text = "Cycle Wax"
 Instance.new("UICorner", selectBtn).CornerRadius = UDim.new(0, 6)
 
 local simBtn = Instance.new("TextButton", btnContainer)
@@ -131,61 +154,28 @@ simBtn.TextSize = 12
 simBtn.Text = "Simulate Roll"
 Instance.new("UICorner", simBtn).CornerRadius = UDim.new(0, 6)
 
-local waxTypesList = {"Soft Wax", "Hard Wax", "Swirled Wax", "Caustic Wax"}
-local currentWaxIndex = 1
-
-local function updateDisplay()
-    selectedWax = waxTypesList[currentWaxIndex]
-    local data = WaxData[selectedWax]
-    
-    local txt = "🧪 **" .. selectedWax .. "**\n\n"
-    txt = txt .. "Success Rate: " .. (data.Success * 100) .. "%\n"
-    
-    if data.Destroy then
-        txt = txt .. "Risk: DESTROYS BEEQUIP ON FAIL!\n"
-    else
-        txt = txt .. "Risk: Safe (Does not destroy)\n"
-    end
-    
-    txt = txt .. "Power Tier: " .. data.Multiplier .. "x\n\n"
-    txt = txt .. "Possible Decoded Stats:\n"
-    txt = txt .. "- " .. MasterStats[11] .. "\n"
-    txt = txt .. "- " .. MasterStats[12] .. "\n"
-    txt = txt .. "- " .. MasterStats[13] .. "\n"
-    txt = txt .. "- " .. MasterStats[16]
-    
-    infoText.Text = txt
-end
-
 selectBtn.MouseButton1Click:Connect(function()
     currentWaxIndex = currentWaxIndex + 1
     if currentWaxIndex > #waxTypesList then currentWaxIndex = 1 end
+    selectedWax = waxTypesList[currentWaxIndex]
     updateDisplay()
 end)
 
 simBtn.MouseButton1Click:Connect(function()
-    if not selectedWax then return end
     local data = WaxData[selectedWax]
-    
     addLog("--- Applying " .. selectedWax .. " ---", Color3.fromRGB(150, 150, 255))
     
-    -- Onett's RNG Logic
     local roll = math.random()
     if roll <= data.Success then
-        -- Success!
         addLog("✅ SUCCESS! (Rolled " .. math.floor(roll*100) .. "% <= " .. (data.Success*100) .. "%)", Color3.fromRGB(100, 255, 100))
         
-        -- Pick a random decoded stat
         local possibleIDs = {11, 12, 13, 16}
         local randomID = possibleIDs[math.random(1, #possibleIDs)]
         local statName = MasterStats[randomID]
-        
-        -- Generate a percentage based on the wax power (e.g. 0.01 to 0.05 * multiplier)
         local baseStat = math.random(1, 5) * data.Multiplier
         
         addLog("🎁 Reward: +" .. baseStat .. "% " .. statName, Color3.fromRGB(255, 200, 100))
     else
-        -- Fail!
         addLog("❌ FAILED! (Rolled " .. math.floor(roll*100) .. "% > " .. (data.Success*100) .. "%)", Color3.fromRGB(255, 100, 100))
         if data.Destroy then
             addLog("💥 BEEQUIP DESTROYED!", Color3.fromRGB(255, 50, 50))
@@ -195,5 +185,62 @@ simBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Initialize
-updateDisplay()
+-- ==========================================
+-- 🔍 LIVE MEMORY EXTRACTION
+-- ==========================================
+local function extractName(val)
+    if type(val) == "string" then return val end
+    if type(val) == "table" then return val.Name or val.Stat or val.Type or val.id or tostring(val) end
+    return tostring(val)
+end
+
+task.spawn(function()
+    addLog("🧠 Injecting into Client Memory...", Color3.fromRGB(150, 150, 150))
+    updateDisplay()
+    
+    local memoryDump = getgc(true)
+    local found = false
+    
+    for _, obj in ipairs(memoryDump) do
+        if type(obj) == "table" then
+            local hasPollen = false
+            local hasConvert = false
+            
+            for _, v in pairs(obj) do
+                local strVal = extractName(v)
+                if type(strVal) == "string" then
+                    local lowerStr = string.lower(strVal)
+                    if lowerStr == "pollen" or lowerStr == "red pollen" then hasPollen = true end
+                    if string.find(lowerStr, "convert") then hasConvert = true end
+                end
+            end
+            
+            if hasPollen and hasConvert then
+                found = true
+                addLog("🎯 Target Stat Dictionary Acquired!", Color3.fromRGB(50, 255, 50))
+                
+                -- Update our dictionary dynamically from the game's RAM
+                local ids = {11, 12, 13, 16}
+                for _, id in ipairs(ids) do
+                    local val = rawget(obj, id) or rawget(obj, tostring(id))
+                    if val then
+                        MasterStats[id] = extractName(val)
+                    else
+                        MasterStats[id] = "Unknown"
+                    end
+                end
+                break
+            end
+        end
+    end
+    
+    if not found then
+        addLog("⚠️ RAM Scan Failed. Using fallbacks.", Color3.fromRGB(255, 100, 100))
+        MasterStats[11] = "White Pollen (Fallback)"
+        MasterStats[12] = "Red Pollen (Fallback)"
+        MasterStats[13] = "Blue Pollen (Fallback)"
+        MasterStats[16] = "Bee Ability Pollen (Fallback)"
+    end
+    
+    updateDisplay()
+end)
