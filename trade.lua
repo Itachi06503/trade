@@ -1,10 +1,10 @@
 -- ==========================================
--- 🗄️ BSS MASTER TABLE DUMPER (StatTypes)
+-- 🌐 BSS GLOBAL MODULE SCAVENGER (Brute Force)
 -- ==========================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
-local GUI_NAME = "BSS_Table_Dumper"
+local GUI_NAME = "BSS_Global_Scavenger"
 pcall(function()
     local target = gethui and gethui() or CoreGui
     if target:FindFirstChild(GUI_NAME) then target[GUI_NAME]:Destroy() end
@@ -14,8 +14,8 @@ local sg = Instance.new("ScreenGui", gethui and gethui() or CoreGui)
 sg.Name = GUI_NAME
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 500, 0, 550)
-mainFrame.Position = UDim2.new(0.5, -250, 0.5, -275)
+mainFrame.Size = UDim2.new(0, 450, 0, 550)
+mainFrame.Position = UDim2.new(0.5, -225, 0.5, -275)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Draggable = true
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
@@ -26,7 +26,7 @@ header.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
 header.Font = Enum.Font.GothamBold
 header.TextSize = 14
-header.Text = " 🗄️ Dumping Raw StatTypes Data..."
+header.Text = " 🌐 Scanning ALL Modules..."
 header.TextXAlignment = Enum.TextXAlignment.Left
 Instance.new("UICorner", header).CornerRadius = UDim.new(0, 8)
 
@@ -48,6 +48,7 @@ scroll.ScrollBarThickness = 6
 Instance.new("UICorner", scroll).CornerRadius = UDim.new(0, 6)
 
 local layout = Instance.new("UIListLayout", scroll)
+layout.Padding = UDim.new(0, 4)
 
 local function printLine(text, color)
     local lbl = Instance.new("TextLabel", scroll)
@@ -60,43 +61,62 @@ local function printLine(text, color)
     lbl.Text = " " .. tostring(text)
 end
 
-local function dumpTable(tbl, indent, depth)
-    if depth > 4 then 
-        printLine(indent .. "{ Max Depth Reached }", Color3.fromRGB(150, 150, 150))
-        return 
-    end
+local targetIDs = {[11] = true, [12] = true, [13] = true, [16] = true}
+local foundCount = 0
+
+-- Recursively scans looking for the target IDs
+local function searchTable(tbl, path, depth, moduleName)
+    if depth > 4 then return end 
     
     for k, v in pairs(tbl) do
-        local keyStr = tostring(k)
-        if type(k) == "string" then keyStr = '["' .. keyStr .. '"]' end
-        if type(k) == "number" then keyStr = "[" .. keyStr .. "]" end
-
+        -- If we hit one of our target IDs
+        if type(k) == "number" and targetIDs[k] then
+            foundCount = foundCount + 1
+            printLine("==================================", Color3.fromRGB(100, 100, 255))
+            printLine("🎯 ID ["..k.."] FOUND IN: " .. moduleName, Color3.fromRGB(50, 255, 50))
+            printLine("Path: " .. path .. "." .. k, Color3.fromRGB(150, 150, 150))
+            
+            if type(v) == "table" then
+                for subK, subV in pairs(v) do
+                    local display = tostring(subV)
+                    if type(subV) == "table" then display = "{...}" end
+                    printLine("  " .. tostring(subK) .. " = " .. display, Color3.fromRGB(255, 200, 100))
+                end
+            else
+                printLine("  Value = " .. tostring(v), Color3.fromRGB(255, 200, 100))
+            end
+        end
+        
+        -- Dive deeper
         if type(v) == "table" then
-            printLine(indent .. keyStr .. " = {", Color3.fromRGB(255, 200, 100))
-            dumpTable(v, indent .. "    ", depth + 1)
-            printLine(indent .. "}", Color3.fromRGB(255, 200, 100))
-        elseif type(v) == "string" then
-            printLine(indent .. keyStr .. ' = "' .. v .. '"', Color3.fromRGB(150, 255, 150))
-        else
-            printLine(indent .. keyStr .. " = " .. tostring(v), Color3.fromRGB(200, 200, 255))
+            searchTable(v, path .. "." .. tostring(k), depth + 1, moduleName)
         end
     end
 end
 
 task.spawn(function()
-    printLine("Extracting StatTypes...", Color3.fromRGB(100, 255, 100))
-    local modScript = ReplicatedStorage:FindFirstChild("StatTypes")
+    printLine("Initializing Brute Force Scan...", Color3.fromRGB(100, 255, 100))
+    printLine("This might take a second...", Color3.fromRGB(150, 150, 150))
     
-    if modScript and modScript:IsA("ModuleScript") then
-        local success, data = pcall(require, modScript)
-        if success and type(data) == "table" then
-            printLine("==================================", Color3.fromRGB(100, 100, 255))
-            dumpTable(data, "", 1)
-            printLine("==================================", Color3.fromRGB(100, 100, 255))
-        else
-            printLine("Failed to require StatTypes module.", Color3.fromRGB(255, 50, 50))
+    local allModules = ReplicatedStorage:GetChildren()
+    local scanned = 0
+    
+    for _, obj in ipairs(allModules) do
+        if obj:IsA("ModuleScript") then
+            scanned = scanned + 1
+            local success, data = pcall(require, obj)
+            
+            if success and type(data) == "table" then
+                searchTable(data, obj.Name, 1, obj.Name)
+            end
         end
+    end
+    
+    printLine("--------------------------------", Color3.fromRGB(100, 100, 100))
+    if foundCount == 0 then
+        printLine("Scan complete. 0 matches found in " .. scanned .. " modules.", Color3.fromRGB(255, 50, 50))
+        printLine("Onett must be generating them dynamically.", Color3.fromRGB(150, 150, 150))
     else
-        printLine("Could not find StatTypes in ReplicatedStorage.", Color3.fromRGB(255, 50, 50))
+        printLine("Scan complete! Found " .. foundCount .. " matches.", Color3.fromRGB(100, 255, 100))
     end
 end)
