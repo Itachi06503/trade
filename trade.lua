@@ -1,11 +1,11 @@
 -- ==========================================
--- 🛠️ BSS INVENTORY DEEP SCANNER (V3)
+-- 🛠️ BSS RECURSIVE DEEP SCANNER (V4)
 -- ==========================================
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
-local GUI_NAME = "BSS_Data_Reader_V3"
+local GUI_NAME = "BSS_Data_Reader_V4"
 pcall(function()
     local target = gethui and gethui() or CoreGui
     if target:FindFirstChild(GUI_NAME) then
@@ -19,8 +19,8 @@ local success = pcall(function() sg.Parent = gethui() end)
 if not success then sg.Parent = CoreGui end
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 350, 0, 450)
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
+mainFrame.Size = UDim2.new(0, 360, 0, 480)
+mainFrame.Position = UDim2.new(0.5, -180, 0.5, -240)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -33,7 +33,7 @@ header.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
 header.Font = Enum.Font.GothamBold
 header.TextSize = 16
-header.Text = "🔍 BSS Deep Inspector V3"
+header.Text = "🧬 BSS Recursive Scanner V4"
 Instance.new("UICorner", header).CornerRadius = UDim.new(0, 8)
 
 local closeBtn = Instance.new("TextButton", header)
@@ -49,10 +49,10 @@ closeBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
 local scanBtn = Instance.new("TextButton", mainFrame)
 scanBtn.Size = UDim2.new(1, -20, 0, 35)
 scanBtn.Position = UDim2.new(0, 10, 0, 50)
-scanBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 255)
+scanBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
 scanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 scanBtn.Font = Enum.Font.GothamBold
-scanBtn.Text = "DEEP SCAN CACHE"
+scanBtn.Text = "EXECUTE MEMORY SPIDER"
 Instance.new("UICorner", scanBtn).CornerRadius = UDim.new(0, 6)
 
 -- Scrolling List
@@ -69,10 +69,10 @@ local layout = Instance.new("UIListLayout", scrollFrame)
 layout.Padding = UDim.new(0, 5)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- Functions
+-- Render Item to UI
 local function addListItem(displayName, potential, guid)
     local itemFrame = Instance.new("Frame", scrollFrame)
-    itemFrame.Size = UDim2.new(1, -10, 0, 60)
+    itemFrame.Size = UDim2.new(1, -10, 0, 65)
     itemFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0, 4)
     
@@ -84,7 +84,7 @@ local function addListItem(displayName, potential, guid)
     nameLbl.Font = Enum.Font.GothamSemibold
     nameLbl.TextSize = 14
     nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-    nameLbl.Text = displayName
+    nameLbl.Text = "🐝 " .. displayName
     
     local potLbl = Instance.new("TextLabel", itemFrame)
     potLbl.Size = UDim2.new(1, -10, 0.3, 0)
@@ -107,22 +107,40 @@ local function addListItem(displayName, potential, guid)
     guidLbl.Text = "GUID: " .. tostring(guid)
 end
 
--- Deep Search logic to find Names and Potentials inside nested tables
-local function searchTable(t)
-    local name = "Unknown Item"
-    local potential = "Maxed/Unknown"
+-- ==========================================
+-- 🕷️ The Recursive Spider Logic
+-- ==========================================
+local foundItemsCount = 0
+
+-- This function calls itself over and over until it hits the bottom of a table
+local function spiderScan(currentTable, parentKey)
+    -- Safety check to prevent infinite loops if Onett has circular references
+    if type(currentTable) ~= "table" then return end
     
-    for k, v in pairs(t) do
-        local keyLower = tostring(k):lower()
-        if type(v) == "string" or type(v) == "number" then
-            if keyLower == "name" or keyLower == "beequipid" or keyLower == "id" then
-                name = tostring(v)
-            elseif keyLower == "potential" or keyLower == "pot" then
-                potential = tostring(v)
-            end
+    -- Check if THIS specific table is a Beequip by looking for common identifying keys
+    if currentTable.BeequipId or currentTable.Potential or currentTable.Name then
+        
+        -- We found one! Extract the exact data points.
+        local name = currentTable.BeequipId or currentTable.Name or "Unknown Name"
+        local pot = currentTable.Potential or currentTable.Pot or "0"
+        
+        -- The GUID is usually the key of the parent table, but sometimes stored inside as UUID
+        local guid = currentTable.GUID or currentTable.UUID or parentKey or "No-GUID-Found"
+        
+        -- Filter out useless dummy data (sometimes devs leave blank templates in the code)
+        if name ~= "Unknown Name" then
+            addListItem(name, pot, guid)
+            foundItemsCount = foundItemsCount + 1
+        end
+        return -- Stop digging in this specific branch, we found the item.
+    end
+    
+    -- If it's not a Beequip, loop through everything inside it and dig deeper
+    for key, value in pairs(currentTable) do
+        if type(value) == "table" then
+            spiderScan(value, key) -- <--- This is the recursive jump
         end
     end
-    return name, potential
 end
 
 scanBtn.MouseButton1Click:Connect(function()
@@ -130,10 +148,9 @@ scanBtn.MouseButton1Click:Connect(function()
         if child:IsA("Frame") then child:Destroy() end
     end
     
-    scanBtn.Text = "DECRYPTING CACHE..."
+    scanBtn.Text = "SPIDER IS DIGGING..."
+    foundItemsCount = 0
     task.wait(0.2)
-    
-    local foundItems = 0
     
     local success, statCache = pcall(function()
         local cacheModule = require(ReplicatedStorage:WaitForChild("ClientStatCache"))
@@ -142,23 +159,15 @@ scanBtn.MouseButton1Click:Connect(function()
     
     if success and type(statCache) == "table" then
         if statCache.Beequips then
-            -- Loop through whatever structure Onett is using
-            for key, data in pairs(statCache.Beequips) do
-                if type(data) == "table" then
-                    local name, potential = searchTable(data)
-                    -- If the key itself is a long string, it's likely the GUID
-                    local displayGuid = (type(key) == "string" and #key > 15) and key or "Found inside index: " .. tostring(key)
-                    
-                    addListItem("🐝 " .. name, potential, displayGuid)
-                    foundItems = foundItems + 1
-                end
-            end
+            -- We unleash the spider on the Beequips folder. 
+            -- It will automatically find the "Storage" folder and dig inside it!
+            spiderScan(statCache.Beequips, "Root")
         end
     end
     
-    if foundItems == 0 then
-        addListItem("System", "N/A", "Could not parse nested tables.")
+    if foundItemsCount == 0 then
+        addListItem("System", "N/A", "Spider found nothing. Data might be encrypted.")
     end
     
-    scanBtn.Text = "DEEP SCAN CACHE"
+    scanBtn.Text = "EXECUTE MEMORY SPIDER"
 end)
