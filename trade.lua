@@ -1,10 +1,10 @@
 -- ==========================================
--- 🔬 BSS DEEP WAX INSPECTOR (Level 3 Scan)
+-- 📖 BSS ROSETTA STONE (Stat ID Decrypter)
 -- ==========================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
-local GUI_NAME = "BSS_Deep_Wax"
+local GUI_NAME = "BSS_Rosetta_Stone"
 pcall(function()
     local target = gethui and gethui() or CoreGui
     if target:FindFirstChild(GUI_NAME) then target[GUI_NAME]:Destroy() end
@@ -14,33 +14,41 @@ local sg = Instance.new("ScreenGui", gethui and gethui() or CoreGui)
 sg.Name = GUI_NAME
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 380, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -190, 0.5, -250)
+mainFrame.Size = UDim2.new(0, 400, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Draggable = true
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
 
 local header = Instance.new("TextLabel", mainFrame)
-header.Size = UDim2.new(1, 0, 0, 30)
+header.Size = UDim2.new(1, 0, 0, 35)
 header.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
-header.Text = " 🔬 Deep Wax Stat Scanner"
+header.Font = Enum.Font.GothamBold
+header.TextSize = 14
+header.Text = " 📖 Decrypting Game Modules..."
 header.TextXAlignment = Enum.TextXAlignment.Left
+Instance.new("UICorner", header).CornerRadius = UDim.new(0, 8)
 
 local closeBtn = Instance.new("TextButton", header)
-closeBtn.Size = UDim2.new(0, 30, 1, 0)
-closeBtn.Position = UDim2.new(1, -30, 0, 0)
+closeBtn.Size = UDim2.new(0, 35, 1, 0)
+closeBtn.Position = UDim2.new(1, -35, 0, 0)
 closeBtn.BackgroundTransparency = 1
 closeBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Text = "X"
 closeBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
 
 local scroll = Instance.new("ScrollingFrame", mainFrame)
-scroll.Size = UDim2.new(1, 0, 1, -30)
-scroll.Position = UDim2.new(0, 0, 0, 30)
+scroll.Size = UDim2.new(1, -10, 1, -45)
+scroll.Position = UDim2.new(0, 5, 0, 40)
 scroll.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.ScrollBarThickness = 6
+Instance.new("UICorner", scroll).CornerRadius = UDim.new(0, 6)
+
 local layout = Instance.new("UIListLayout", scroll)
-layout.Padding = UDim.new(0, 2)
+layout.Padding = UDim.new(0, 4)
 
 local function printLine(text, color)
     local lbl = Instance.new("TextLabel", scroll)
@@ -53,52 +61,75 @@ local function printLine(text, color)
     lbl.Text = " " .. tostring(text)
 end
 
--- Deep Scan Logic
+-- Modules most likely to contain the mappings
+local targetModules = {
+    "BeequipTypes", 
+    "StatTypes", 
+    "ItemTypes", 
+    "Types", 
+    "StatCache",
+    "WaxTypes"
+}
+
+-- IDs we are actively hunting for based on your screenshots
+local targetIDs = {11, 12, 13, 16}
+
 task.spawn(function()
-    local success, statCache = pcall(function()
-        return require(ReplicatedStorage:WaitForChild("ClientStatCache")):Get()
-    end)
+    printLine("Initiating Deep Module Scan...", Color3.fromRGB(100, 255, 100))
+    printLine("Hunting for Stat IDs: 11, 12, 13, 16", Color3.fromRGB(150, 150, 150))
+    printLine("--------------------------------", Color3.fromRGB(100, 100, 100))
     
-    if success and statCache and statCache.Beequips then
-        local foundWaxedItems = 0
+    local foundSomething = false
+
+    for _, moduleName in pairs(targetModules) do
+        local modScript = ReplicatedStorage:FindFirstChild(moduleName)
         
-        for folderName, folderData in pairs(statCache.Beequips) do
-            if type(folderData) == "table" then
-                for index, item in pairs(folderData) do
-                    
-                    if type(item) == "table" and item.W and type(item.W) == "table" then
-                        local itemName = item.T or "Unknown"
-                        foundWaxedItems = foundWaxedItems + 1
+        if modScript and modScript:IsA("ModuleScript") then
+            printLine("Loading Module: " .. moduleName, Color3.fromRGB(255, 200, 100))
+            
+            local success, data = pcall(require, modScript)
+            
+            if success and type(data) == "table" then
+                -- Scan top-level tables inside the module
+                for key, val in pairs(data) do
+                    if type(val) == "table" then
                         
-                        -- Limit to just 2 items to prevent massive lag
-                        if foundWaxedItems > 2 then break end 
+                        -- Check if this table contains any of our target IDs
+                        local hasTargetID = false
+                        for _, id in ipairs(targetIDs) do
+                            if val[id] ~= nil then hasTargetID = true end
+                        end
                         
-                        printLine("========================", Color3.fromRGB(100, 100, 255))
-                        printLine("🐝 " .. itemName, Color3.fromRGB(255, 200, 100))
-                        
-                        for slotNum, waxData in pairs(item.W) do
-                            printLine("  Slot [" .. tostring(slotNum) .. "]:", Color3.fromRGB(150, 200, 255))
+                        if hasTargetID then
+                            foundSomething = true
+                            printLine("========================", Color3.fromRGB(100, 100, 255))
+                            printLine("🎯 FOUND MATCH IN: " .. tostring(key), Color3.fromRGB(50, 255, 50))
                             
-                            if type(waxData) == "table" then
-                                -- Open up the nested table!
-                                for deepKey, deepVal in pairs(waxData) do
-                                    local displayVal = tostring(deepVal)
-                                    if type(deepVal) == "table" then displayVal = "{...}" end
-                                    printLine("    " .. tostring(deepKey) .. " = " .. displayVal, Color3.fromRGB(150, 255, 150))
+                            -- Print out what the table maps the IDs to!
+                            for statID, statData in pairs(val) do
+                                if type(statID) == "number" and statID <= 30 then
+                                    local display = tostring(statData)
+                                    if type(statData) == "table" then
+                                        -- If it's a table, try to find a Name or Stat string inside it
+                                        display = statData.Name or statData.Stat or "{Nested Table}"
+                                    end
+                                    printLine("  ID [" .. tostring(statID) .. "] = " .. display, Color3.fromRGB(150, 255, 150))
                                 end
-                            else
-                                printLine("    Value: " .. tostring(waxData), Color3.fromRGB(255, 150, 150))
                             end
                         end
                     end
                 end
+            else
+                printLine("  Could not read module data.", Color3.fromRGB(255, 100, 100))
             end
         end
-        
-        if foundWaxedItems == 0 then
-            printLine("No Waxed Beequips found!", Color3.fromRGB(255, 50, 50))
-        end
+    end
+    
+    if not foundSomething then
+        printLine("Scan complete. Direct ID matches not found.", Color3.fromRGB(255, 100, 100))
+        printLine("Onett might be hiding them in a deeper nested table.", Color3.fromRGB(200, 200, 200))
     else
-        printLine("Failed to read data.", Color3.fromRGB(255, 50, 50))
+        printLine("--------------------------------", Color3.fromRGB(100, 100, 100))
+        printLine("Scan Complete!", Color3.fromRGB(100, 255, 100))
     end
 end)
