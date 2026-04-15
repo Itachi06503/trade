@@ -1,12 +1,12 @@
 -- ==========================================
--- 🛠️ BSS INVENTORY SCANNER (COMPONENT A)
+-- 🛠️ BSS INVENTORY SCANNER (COMPONENT A - FIXED)
 -- ==========================================
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
-local LocalPlayer = Players.LocalPlayer
 
 -- 1. Setup the UI
-local GUI_NAME = "BSS_Data_Reader"
+local GUI_NAME = "BSS_Data_Reader_V2"
 pcall(function()
     local target = gethui and gethui() or CoreGui
     if target:FindFirstChild(GUI_NAME) then
@@ -20,8 +20,8 @@ local success = pcall(function() sg.Parent = gethui() end)
 if not success then sg.Parent = CoreGui end
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 300, 0, 400)
-mainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+mainFrame.Size = UDim2.new(0, 320, 0, 450)
+mainFrame.Position = UDim2.new(0.5, -160, 0.5, -225)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -34,7 +34,7 @@ header.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
 header.Font = Enum.Font.GothamBold
 header.TextSize = 16
-header.Text = "🔍 Item GUID Scanner"
+header.Text = "🔍 BSS GUID Scanner V2"
 Instance.new("UICorner", header).CornerRadius = UDim.new(0, 8)
 
 local closeBtn = Instance.new("TextButton", header)
@@ -53,7 +53,7 @@ scanBtn.Position = UDim2.new(0, 10, 0, 50)
 scanBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
 scanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 scanBtn.Font = Enum.Font.GothamBold
-scanBtn.Text = "SCAN INVENTORY"
+scanBtn.Text = "RIP CLIENT MEMORY"
 Instance.new("UICorner", scanBtn).CornerRadius = UDim.new(0, 6)
 
 -- Scrolling List
@@ -73,7 +73,7 @@ layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 -- 2. The Extraction Logic
 local function addListItem(displayName, guid)
     local itemFrame = Instance.new("Frame", scrollFrame)
-    itemFrame.Size = UDim2.new(1, -10, 0, 40)
+    itemFrame.Size = UDim2.new(1, -10, 0, 45)
     itemFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
     Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0, 4)
     
@@ -83,7 +83,7 @@ local function addListItem(displayName, guid)
     nameLbl.BackgroundTransparency = 1
     nameLbl.TextColor3 = Color3.fromRGB(255, 200, 100)
     nameLbl.Font = Enum.Font.GothamSemibold
-    nameLbl.TextSize = 14
+    nameLbl.TextSize = 13
     nameLbl.TextXAlignment = Enum.TextXAlignment.Left
     nameLbl.Text = displayName
     
@@ -95,7 +95,7 @@ local function addListItem(displayName, guid)
     guidLbl.Font = Enum.Font.Code
     guidLbl.TextSize = 10
     guidLbl.TextXAlignment = Enum.TextXAlignment.Left
-    guidLbl.Text = "UUID: " .. tostring(guid)
+    guidLbl.Text = "GUID: " .. tostring(guid)
 end
 
 scanBtn.MouseButton1Click:Connect(function()
@@ -104,29 +104,53 @@ scanBtn.MouseButton1Click:Connect(function()
         if child:IsA("Frame") then child:Destroy() end
     end
     
-    scanBtn.Text = "SCANNING..."
-    
-    -- In BSS, Bequips and Stickers are usually tracked in the player's hidden stat folders.
-    -- This looks for standard Value objects storing GUIDs.
-    local beequipsFolder = LocalPlayer:FindFirstChild("Beequips")
-    local stickersFolder = LocalPlayer:FindFirstChild("Stickers") -- Or wherever the game stores them
+    scanBtn.Text = "DECRYPTING STAT CACHE..."
+    task.wait(0.2)
     
     local foundItems = 0
     
-    if beequipsFolder then
-        for _, item in pairs(beequipsFolder:GetChildren()) do
-            -- Assuming the Name is the Item ID and the Value holds the UUID string or table
-            addListItem("Beequip: " .. item.Name, item.Value or "No-UUID-Found")
-            foundItems = foundItems + 1
+    -- Force require Onett's ClientStatCache module to read the raw tables
+    local success, statCache = pcall(function()
+        local cacheModule = require(ReplicatedStorage:WaitForChild("ClientStatCache"))
+        return cacheModule:Get() -- This dumps the player's entire save file dictionary
+    end)
+    
+    if success and type(statCache) == "table" then
+        -- 1. Rip Beequips
+        if statCache.Beequips then
+            for guid, itemData in pairs(statCache.Beequips) do
+                -- ItemData is usually a table containing stats. We extract the visual name.
+                local beequipName = "Unknown Beequip"
+                if type(itemData) == "table" then
+                    beequipName = itemData.BeequipId or itemData.Name or "Custom/Waxed Beequip"
+                elseif type(itemData) == "string" then
+                    beequipName = itemData
+                end
+                
+                addListItem("🐝 " .. beequipName, guid)
+                foundItems = foundItems + 1
+            end
+        end
+        
+        -- 2. Rip Stickers
+        if statCache.Stickers then
+            for guid, stickerData in pairs(statCache.Stickers) do
+                local stickerName = "Unknown Sticker"
+                if type(stickerData) == "table" then
+                    stickerName = stickerData.StickerId or stickerData.Name or "Sticker"
+                elseif type(stickerData) == "string" then
+                    stickerName = stickerData
+                end
+                
+                addListItem("🏷️ " .. stickerName, guid)
+                foundItems = foundItems + 1
+            end
         end
     end
     
-    -- If folders aren't standard, we scan ReplicatedStorage/Player memory (Example placeholder)
     if foundItems == 0 then
-        addListItem("System", "Could not locate standard folders. Using fallback...")
-        -- You would expand this to tap into Onett's specific Client tables using getgc() if needed
+        addListItem("System Error", "Could not read ClientStatCache. Did Onett patch the module?")
     end
     
-    task.wait(0.5)
-    scanBtn.Text = "SCAN INVENTORY"
+    scanBtn.Text = "RIP CLIENT MEMORY"
 end)
