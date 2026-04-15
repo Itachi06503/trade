@@ -1,5 +1,5 @@
 -- ==========================================
--- 🗄️ BSS MASTER TABLE DUMPER
+-- 🗄️ BSS MASTER TABLE DUMPER (StatTypes)
 -- ==========================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
@@ -26,7 +26,7 @@ header.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
 header.Font = Enum.Font.GothamBold
 header.TextSize = 14
-header.Text = " 🗄️ Dumping Raw Module Data..."
+header.Text = " 🗄️ Dumping Raw StatTypes Data..."
 header.TextXAlignment = Enum.TextXAlignment.Left
 Instance.new("UICorner", header).CornerRadius = UDim.new(0, 8)
 
@@ -60,7 +60,6 @@ local function printLine(text, color)
     lbl.Text = " " .. tostring(text)
 end
 
--- Dumps a table out visually
 local function dumpTable(tbl, indent, depth)
     if depth > 4 then 
         printLine(indent .. "{ Max Depth Reached }", Color3.fromRGB(150, 150, 150))
@@ -68,7 +67,6 @@ local function dumpTable(tbl, indent, depth)
     end
     
     for k, v in pairs(tbl) do
-        -- Formatting keys based on type
         local keyStr = tostring(k)
         if type(k) == "string" then keyStr = '["' .. keyStr .. '"]' end
         if type(k) == "number" then keyStr = "[" .. keyStr .. "]" end
@@ -86,8 +84,8 @@ local function dumpTable(tbl, indent, depth)
 end
 
 task.spawn(function()
-    printLine("Extracting WaxTypes...", Color3.fromRGB(100, 255, 100))
-    local modScript = ReplicatedStorage:FindFirstChild("WaxTypes")
+    printLine("Extracting StatTypes...", Color3.fromRGB(100, 255, 100))
+    local modScript = ReplicatedStorage:FindFirstChild("StatTypes")
     
     if modScript and modScript:IsA("ModuleScript") then
         local success, data = pcall(require, modScript)
@@ -96,7 +94,9 @@ task.spawn(function()
             dumpTable(data, "", 1)
             printLine("==================================", Color3.fromRGB(100, 100, 255))
         else
-            printLine("Failed to require WaxTypes module.", Color3.fromRGB(255, 50, 50))
+            printLine("Failed to require StatTypes module.", Color3.fromRGB(255, 50, 50))
         end
+    else
+        printLine("Could not find StatTypes in ReplicatedStorage.", Color3.fromRGB(255, 50, 50))
     end
 end)
