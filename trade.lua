@@ -1,10 +1,10 @@
 -- ==========================================
--- 📖 BSS ROSETTA STONE (Stat ID Decrypter)
+-- 🤿 BSS RECURSIVE DEEP-DIVER
 -- ==========================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
-local GUI_NAME = "BSS_Rosetta_Stone"
+local GUI_NAME = "BSS_Deep_Diver"
 pcall(function()
     local target = gethui and gethui() or CoreGui
     if target:FindFirstChild(GUI_NAME) then target[GUI_NAME]:Destroy() end
@@ -14,8 +14,8 @@ local sg = Instance.new("ScreenGui", gethui and gethui() or CoreGui)
 sg.Name = GUI_NAME
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 400, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+mainFrame.Size = UDim2.new(0, 420, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -210, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Draggable = true
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
@@ -26,7 +26,7 @@ header.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
 header.Font = Enum.Font.GothamBold
 header.TextSize = 14
-header.Text = " 📖 Decrypting Game Modules..."
+header.Text = " 🤿 Recursive Table Scavenger"
 header.TextXAlignment = Enum.TextXAlignment.Left
 Instance.new("UICorner", header).CornerRadius = UDim.new(0, 8)
 
@@ -61,75 +61,55 @@ local function printLine(text, color)
     lbl.Text = " " .. tostring(text)
 end
 
--- Modules most likely to contain the mappings
-local targetModules = {
-    "BeequipTypes", 
-    "StatTypes", 
-    "ItemTypes", 
-    "Types", 
-    "StatCache",
-    "WaxTypes"
-}
+-- The IDs we are hunting
+local targetIDs = {11 = true, 12 = true, 13 = true, 16 = true}
 
--- IDs we are actively hunting for based on your screenshots
-local targetIDs = {11, 12, 13, 16}
-
-task.spawn(function()
-    printLine("Initiating Deep Module Scan...", Color3.fromRGB(100, 255, 100))
-    printLine("Hunting for Stat IDs: 11, 12, 13, 16", Color3.fromRGB(150, 150, 150))
-    printLine("--------------------------------", Color3.fromRGB(100, 100, 100))
+-- Recursive search function
+local function recursiveSearch(tbl, path, depth)
+    if depth > 5 then return end -- Prevent infinite loops
     
-    local foundSomething = false
-
-    for _, moduleName in pairs(targetModules) do
-        local modScript = ReplicatedStorage:FindFirstChild(moduleName)
+    for k, v in pairs(tbl) do
+        local currentPath = path .. "." .. tostring(k)
         
-        if modScript and modScript:IsA("ModuleScript") then
-            printLine("Loading Module: " .. moduleName, Color3.fromRGB(255, 200, 100))
+        -- If the key matches one of our target IDs!
+        if type(k) == "number" and targetIDs[k] then
+            printLine("========================", Color3.fromRGB(100, 100, 255))
+            printLine("🎯 FOUND ID ["..tostring(k).."] AT:", Color3.fromRGB(50, 255, 50))
+            printLine(currentPath, Color3.fromRGB(150, 150, 150))
             
-            local success, data = pcall(require, modScript)
-            
-            if success and type(data) == "table" then
-                -- Scan top-level tables inside the module
-                for key, val in pairs(data) do
-                    if type(val) == "table" then
-                        
-                        -- Check if this table contains any of our target IDs
-                        local hasTargetID = false
-                        for _, id in ipairs(targetIDs) do
-                            if val[id] ~= nil then hasTargetID = true end
-                        end
-                        
-                        if hasTargetID then
-                            foundSomething = true
-                            printLine("========================", Color3.fromRGB(100, 100, 255))
-                            printLine("🎯 FOUND MATCH IN: " .. tostring(key), Color3.fromRGB(50, 255, 50))
-                            
-                            -- Print out what the table maps the IDs to!
-                            for statID, statData in pairs(val) do
-                                if type(statID) == "number" and statID <= 30 then
-                                    local display = tostring(statData)
-                                    if type(statData) == "table" then
-                                        -- If it's a table, try to find a Name or Stat string inside it
-                                        display = statData.Name or statData.Stat or "{Nested Table}"
-                                    end
-                                    printLine("  ID [" .. tostring(statID) .. "] = " .. display, Color3.fromRGB(150, 255, 150))
-                                end
-                            end
-                        end
-                    end
+            if type(v) == "table" then
+                for subK, subV in pairs(v) do
+                    local displayVal = tostring(subV)
+                    if type(subV) == "table" then displayVal = "{...}" end
+                    printLine("  " .. tostring(subK) .. " = " .. displayVal, Color3.fromRGB(255, 200, 100))
                 end
             else
-                printLine("  Could not read module data.", Color3.fromRGB(255, 100, 100))
+                printLine("  Value = " .. tostring(v), Color3.fromRGB(255, 200, 100))
+            end
+        end
+        
+        -- If the value is a table, dive deeper into it
+        if type(v) == "table" then
+            recursiveSearch(v, currentPath, depth + 1)
+        end
+    end
+end
+
+task.spawn(function()
+    printLine("Initiating Recursive Dive...", Color3.fromRGB(100, 255, 100))
+    printLine("Targeting: WaxTypes & StatTypes", Color3.fromRGB(150, 150, 150))
+    
+    local modulesToCheck = {"WaxTypes", "StatTypes"}
+    
+    for _, modName in ipairs(modulesToCheck) do
+        local modScript = ReplicatedStorage:FindFirstChild(modName)
+        if modScript and modScript:IsA("ModuleScript") then
+            local success, data = pcall(require, modScript)
+            if success and type(data) == "table" then
+                recursiveSearch(data, modName, 1)
             end
         end
     end
-    
-    if not foundSomething then
-        printLine("Scan complete. Direct ID matches not found.", Color3.fromRGB(255, 100, 100))
-        printLine("Onett might be hiding them in a deeper nested table.", Color3.fromRGB(200, 200, 200))
-    else
-        printLine("--------------------------------", Color3.fromRGB(100, 100, 100))
-        printLine("Scan Complete!", Color3.fromRGB(100, 255, 100))
-    end
+    printLine("--------------------------------", Color3.fromRGB(100, 100, 100))
+    printLine("Dive Complete!", Color3.fromRGB(100, 255, 100))
 end)
