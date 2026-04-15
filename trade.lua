@@ -1,10 +1,10 @@
 -- ==========================================
--- 🏆 BSS UNIVERSAL SCANNER (V5 OMNI-READER)
+-- 🕯️ BSS WAX INSPECTOR (Targeted Table Cracker)
 -- ==========================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
-local GUI_NAME = "BSS_Omni_Scanner"
+local GUI_NAME = "BSS_Wax_Inspector"
 pcall(function()
     local target = gethui and gethui() or CoreGui
     if target:FindFirstChild(GUI_NAME) then target[GUI_NAME]:Destroy() end
@@ -14,143 +14,96 @@ local sg = Instance.new("ScreenGui", gethui and gethui() or CoreGui)
 sg.Name = GUI_NAME
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 380, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -190, 0.5, -250)
+mainFrame.Size = UDim2.new(0, 360, 0, 450)
+mainFrame.Position = UDim2.new(0.5, -180, 0.5, -225)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-mainFrame.Active = true
 mainFrame.Draggable = true
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
 
--- Header
 local header = Instance.new("TextLabel", mainFrame)
-header.Size = UDim2.new(1, 0, 0, 40)
-header.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+header.Size = UDim2.new(1, 0, 0, 30)
+header.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
-header.Font = Enum.Font.GothamBold
-header.TextSize = 16
-header.Text = "🐝 BSS Universal Omni-Scanner"
-Instance.new("UICorner", header).CornerRadius = UDim.new(0, 8)
+header.Text = " 🕯️ Inspecting Wax Tables (W)"
+header.TextXAlignment = Enum.TextXAlignment.Left
 
 local closeBtn = Instance.new("TextButton", header)
-closeBtn.Size = UDim2.new(0, 40, 1, 0)
-closeBtn.Position = UDim2.new(1, -40, 0, 0)
+closeBtn.Size = UDim2.new(0, 30, 1, 0)
+closeBtn.Position = UDim2.new(1, -30, 0, 0)
 closeBtn.BackgroundTransparency = 1
-closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
 closeBtn.Text = "X"
 closeBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
 
--- Scan Button
-local scanBtn = Instance.new("TextButton", mainFrame)
-scanBtn.Size = UDim2.new(1, -20, 0, 35)
-scanBtn.Position = UDim2.new(0, 10, 0, 50)
-scanBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
-scanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-scanBtn.Font = Enum.Font.GothamBold
-scanBtn.Text = "LOAD ALL INVENTORIES"
-Instance.new("UICorner", scanBtn).CornerRadius = UDim.new(0, 6)
+local scroll = Instance.new("ScrollingFrame", mainFrame)
+scroll.Size = UDim2.new(1, 0, 1, -30)
+scroll.Position = UDim2.new(0, 0, 0, 30)
+scroll.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+local layout = Instance.new("UIListLayout", scroll)
+layout.Padding = UDim.new(0, 2)
 
--- Scrolling List
-local scrollFrame = Instance.new("ScrollingFrame", mainFrame)
-scrollFrame.Size = UDim2.new(1, -20, 1, -100)
-scrollFrame.Position = UDim2.new(0, 10, 0, 95)
-scrollFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-scrollFrame.ScrollBarThickness = 6
-Instance.new("UICorner", scrollFrame).CornerRadius = UDim.new(0, 6)
-
-local layout = Instance.new("UIListLayout", scrollFrame)
-layout.Padding = UDim.new(0, 5)
-layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
--- Render Item to UI (Now includes Location!)
-local function addListItem(name, potential, guid, location)
-    local itemFrame = Instance.new("Frame", scrollFrame)
-    itemFrame.Size = UDim2.new(1, -10, 0, 65)
-    itemFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0, 4)
-    
-    local nameLbl = Instance.new("TextLabel", itemFrame)
-    nameLbl.Size = UDim2.new(1, -10, 0.35, 0)
-    nameLbl.Position = UDim2.new(0, 5, 0, 0)
-    nameLbl.BackgroundTransparency = 1
-    nameLbl.TextColor3 = Color3.fromRGB(255, 200, 100)
-    nameLbl.Font = Enum.Font.GothamSemibold
-    nameLbl.TextSize = 14
-    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-    nameLbl.Text = "🐝 " .. tostring(name) .. " [" .. tostring(location) .. "]"
-    
-    local potLbl = Instance.new("TextLabel", itemFrame)
-    potLbl.Size = UDim2.new(1, -10, 0.3, 0)
-    potLbl.Position = UDim2.new(0, 5, 0.35, 0)
-    potLbl.BackgroundTransparency = 1
-    potLbl.TextColor3 = Color3.fromRGB(100, 255, 100)
-    potLbl.Font = Enum.Font.Gotham
-    potLbl.TextSize = 12
-    potLbl.TextXAlignment = Enum.TextXAlignment.Left
-    potLbl.Text = "⚡ Quality (Q): " .. tostring(potential)
-
-    local guidLbl = Instance.new("TextLabel", itemFrame)
-    guidLbl.Size = UDim2.new(1, -10, 0.35, 0)
-    guidLbl.Position = UDim2.new(0, 5, 0.65, 0)
-    guidLbl.BackgroundTransparency = 1
-    guidLbl.TextColor3 = Color3.fromRGB(150, 150, 150)
-    guidLbl.Font = Enum.Font.Code
-    guidLbl.TextSize = 11
-    guidLbl.TextXAlignment = Enum.TextXAlignment.Left
-    guidLbl.Text = "GUID: " .. tostring(guid)
+local function printLine(text, color)
+    local lbl = Instance.new("TextLabel", scroll)
+    lbl.Size = UDim2.new(1, -10, 0, 20)
+    lbl.BackgroundTransparency = 1
+    lbl.TextColor3 = color or Color3.fromRGB(200, 200, 200)
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Font = Enum.Font.Code
+    lbl.TextSize = 12
+    lbl.Text = " " .. tostring(text)
 end
 
--- ==========================================
--- ⚙️ The Omni-Scan Logic
--- ==========================================
-scanBtn.MouseButton1Click:Connect(function()
-    for _, child in pairs(scrollFrame:GetChildren()) do
-        if child:IsA("Frame") then child:Destroy() end
-    end
-    
-    scanBtn.Text = "READING DATA..."
-    task.wait(0.1)
-    
+-- Scan Logic
+task.spawn(function()
     local success, statCache = pcall(function()
         return require(ReplicatedStorage:WaitForChild("ClientStatCache")):Get()
     end)
     
     if success and statCache and statCache.Beequips then
-        local foundItems = 0
+        local foundWaxedItems = 0
         
-        -- Loop through EVERY folder inside Beequips (Storage, Case, Permanents, etc.)
+        -- Check all folders (Case, Storage, etc.)
         for folderName, folderData in pairs(statCache.Beequips) do
-            
-            -- If the folder is a table, look inside it
             if type(folderData) == "table" then
                 for index, item in pairs(folderData) do
                     
-                    -- Check if this specific item has the "T" (Type) cipher we discovered
-                    if type(item) == "table" and item.T then
-                        local itemName = item.T or "Unknown Beequip"
-                        -- Sometimes Onett uses 'IT' instead of 'S' in different cases
-                        local itemGuid = item.S or item.IT or "No-GUID-Attached"
+                    -- Only look at items that have a 'W' (Wax) property
+                    if type(item) == "table" and item.W then
+                        local itemName = item.T or "Unknown"
                         
-                        -- Format the Quality
-                        local rawQuality = item.Q or 0
-                        local itemPotential = string.format("%.4f", rawQuality)
+                        -- If 'W' is a table, we open it up!
+                        if type(item.W) == "table" then
+                            foundWaxedItems = foundWaxedItems + 1
+                            
+                            printLine("========================", Color3.fromRGB(100, 100, 255))
+                            printLine("🐝 " .. itemName .. " [" .. folderName .. "]", Color3.fromRGB(255, 200, 100))
+                            printLine("Wax Data (W) Contents:", Color3.fromRGB(150, 150, 150))
+                            
+                            -- Loop through everything inside the 'W' table
+                            local waxCount = 0
+                            for wKey, wVal in pairs(item.W) do
+                                waxCount = waxCount + 1
+                                local displayVal = tostring(wVal)
+                                if type(wVal) == "table" then displayVal = "{Nested Data}" end
+                                
+                                printLine("  [" .. tostring(wKey) .. "] = " .. displayVal, Color3.fromRGB(255, 150, 255))
+                            end
+                            
+                            if waxCount == 0 then
+                                printLine("  [Table is completely empty]", Color3.fromRGB(100, 100, 100))
+                            end
+                        end
                         
-                        -- Add it to UI, passing the folderName as the location!
-                        addListItem(itemName, itemPotential, itemGuid, folderName)
-                        foundItems = foundItems + 1
                     end
                 end
             end
         end
         
-        if foundItems == 0 then
-            addListItem("System", "N/A", "Empty.", "System")
+        if foundWaxedItems == 0 then
+            printLine("No Waxed Beequips found in your inventory!", Color3.fromRGB(255, 50, 50))
+            printLine("Try waxing an item and running this again.")
         end
     else
-        addListItem("Error", "N/A", "Failed to reach statCache.Beequips", "Error")
+        printLine("Failed to read statCache.Beequips", Color3.fromRGB(255, 50, 50))
     end
-    
-    scanBtn.Text = "LOAD ALL INVENTORIES"
 end)
