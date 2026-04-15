@@ -1,10 +1,10 @@
 -- ==========================================
--- 🌐 BSS GLOBAL MODULE SCAVENGER (Brute Force)
+-- 🔎 BSS REVERSE STRING HUNTER
 -- ==========================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
-local GUI_NAME = "BSS_Global_Scavenger"
+local GUI_NAME = "BSS_String_Hunter"
 pcall(function()
     local target = gethui and gethui() or CoreGui
     if target:FindFirstChild(GUI_NAME) then target[GUI_NAME]:Destroy() end
@@ -14,8 +14,8 @@ local sg = Instance.new("ScreenGui", gethui and gethui() or CoreGui)
 sg.Name = GUI_NAME
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 450, 0, 550)
-mainFrame.Position = UDim2.new(0.5, -225, 0.5, -275)
+mainFrame.Size = UDim2.new(0, 480, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -240, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Draggable = true
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
@@ -26,7 +26,7 @@ header.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
 header.Font = Enum.Font.GothamBold
 header.TextSize = 14
-header.Text = " 🌐 Scanning ALL Modules..."
+header.Text = " 🔎 Hunting for 'Mark Duration'..."
 header.TextXAlignment = Enum.TextXAlignment.Left
 Instance.new("UICorner", header).CornerRadius = UDim.new(0, 8)
 
@@ -52,51 +52,50 @@ layout.Padding = UDim.new(0, 4)
 
 local function printLine(text, color)
     local lbl = Instance.new("TextLabel", scroll)
-    lbl.Size = UDim2.new(1, -10, 0, 18)
+    lbl.Size = UDim2.new(1, -10, 0, 20)
     lbl.BackgroundTransparency = 1
-    lbl.TextColor3 = color or Color3.fromRGB(200, 255, 200)
+    lbl.TextColor3 = color or Color3.fromRGB(200, 200, 200)
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.Font = Enum.Font.Code
     lbl.TextSize = 12
     lbl.Text = " " .. tostring(text)
 end
 
-local targetIDs = {[11] = true, [12] = true, [13] = true, [16] = true}
 local foundCount = 0
 
--- Recursively scans looking for the target IDs
-local function searchTable(tbl, path, depth, moduleName)
-    if depth > 4 then return end 
+-- Recursively scans looking for the target string
+local function searchForString(tbl, path, depth, moduleName)
+    if depth > 5 then return end 
     
     for k, v in pairs(tbl) do
-        -- If we hit one of our target IDs
-        if type(k) == "number" and targetIDs[k] then
-            foundCount = foundCount + 1
-            printLine("==================================", Color3.fromRGB(100, 100, 255))
-            printLine("🎯 ID ["..k.."] FOUND IN: " .. moduleName, Color3.fromRGB(50, 255, 50))
-            printLine("Path: " .. path .. "." .. k, Color3.fromRGB(150, 150, 150))
-            
-            if type(v) == "table" then
-                for subK, subV in pairs(v) do
-                    local display = tostring(subV)
-                    if type(subV) == "table" then display = "{...}" end
-                    printLine("  " .. tostring(subK) .. " = " .. display, Color3.fromRGB(255, 200, 100))
-                end
-            else
-                printLine("  Value = " .. tostring(v), Color3.fromRGB(255, 200, 100))
+        -- Check if the value is a string and contains "mark" and "duration"
+        if type(v) == "string" then
+            local valLower = string.lower(v)
+            if string.find(valLower, "mark") and string.find(valLower, "duration") then
+                foundCount = foundCount + 1
+                printLine("==================================", Color3.fromRGB(100, 100, 255))
+                printLine("🎯 STRING FOUND IN: " .. moduleName, Color3.fromRGB(50, 255, 50))
+                printLine("Path: " .. path, Color3.fromRGB(150, 150, 150))
+                
+                -- Print out the exact key and value so we can see the ID!
+                local keyStr = tostring(k)
+                if type(k) == "number" then keyStr = "[" .. keyStr .. "]" end
+                if type(k) == "string" then keyStr = '["' .. keyStr .. '"]' end
+                
+                printLine("  " .. keyStr .. ' = "' .. tostring(v) .. '"', Color3.fromRGB(255, 200, 100))
             end
         end
         
-        -- Dive deeper
+        -- Dive deeper into nested tables
         if type(v) == "table" then
-            searchTable(v, path .. "." .. tostring(k), depth + 1, moduleName)
+            searchForString(v, path .. "." .. tostring(k), depth + 1, moduleName)
         end
     end
 end
 
 task.spawn(function()
-    printLine("Initializing Brute Force Scan...", Color3.fromRGB(100, 255, 100))
-    printLine("This might take a second...", Color3.fromRGB(150, 150, 150))
+    printLine("Initializing Reverse Search...", Color3.fromRGB(100, 255, 100))
+    printLine("Targeting phrases like 'Mark Duration'", Color3.fromRGB(150, 150, 150))
     
     local allModules = ReplicatedStorage:GetChildren()
     local scanned = 0
@@ -107,15 +106,14 @@ task.spawn(function()
             local success, data = pcall(require, obj)
             
             if success and type(data) == "table" then
-                searchTable(data, obj.Name, 1, obj.Name)
+                searchForString(data, obj.Name, 1, obj.Name)
             end
         end
     end
     
     printLine("--------------------------------", Color3.fromRGB(100, 100, 100))
     if foundCount == 0 then
-        printLine("Scan complete. 0 matches found in " .. scanned .. " modules.", Color3.fromRGB(255, 50, 50))
-        printLine("Onett must be generating them dynamically.", Color3.fromRGB(150, 150, 150))
+        printLine("Scan complete. 0 matches found.", Color3.fromRGB(255, 50, 50))
     else
         printLine("Scan complete! Found " .. foundCount .. " matches.", Color3.fromRGB(100, 255, 100))
     end
