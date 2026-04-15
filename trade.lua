@@ -1,10 +1,10 @@
 -- ==========================================
--- 🕯️ BSS WAX INSPECTOR (Targeted Table Cracker)
+-- 🔬 BSS DEEP WAX INSPECTOR (Level 3 Scan)
 -- ==========================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
-local GUI_NAME = "BSS_Wax_Inspector"
+local GUI_NAME = "BSS_Deep_Wax"
 pcall(function()
     local target = gethui and gethui() or CoreGui
     if target:FindFirstChild(GUI_NAME) then target[GUI_NAME]:Destroy() end
@@ -14,8 +14,8 @@ local sg = Instance.new("ScreenGui", gethui and gethui() or CoreGui)
 sg.Name = GUI_NAME
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 360, 0, 450)
-mainFrame.Position = UDim2.new(0.5, -180, 0.5, -225)
+mainFrame.Size = UDim2.new(0, 380, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -190, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Draggable = true
 
@@ -23,7 +23,7 @@ local header = Instance.new("TextLabel", mainFrame)
 header.Size = UDim2.new(1, 0, 0, 30)
 header.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
-header.Text = " 🕯️ Inspecting Wax Tables (W)"
+header.Text = " 🔬 Deep Wax Stat Scanner"
 header.TextXAlignment = Enum.TextXAlignment.Left
 
 local closeBtn = Instance.new("TextButton", header)
@@ -53,7 +53,7 @@ local function printLine(text, color)
     lbl.Text = " " .. tostring(text)
 end
 
--- Scan Logic
+-- Deep Scan Logic
 task.spawn(function()
     local success, statCache = pcall(function()
         return require(ReplicatedStorage:WaitForChild("ClientStatCache")):Get()
@@ -62,48 +62,43 @@ task.spawn(function()
     if success and statCache and statCache.Beequips then
         local foundWaxedItems = 0
         
-        -- Check all folders (Case, Storage, etc.)
         for folderName, folderData in pairs(statCache.Beequips) do
             if type(folderData) == "table" then
                 for index, item in pairs(folderData) do
                     
-                    -- Only look at items that have a 'W' (Wax) property
-                    if type(item) == "table" and item.W then
+                    if type(item) == "table" and item.W and type(item.W) == "table" then
                         local itemName = item.T or "Unknown"
+                        foundWaxedItems = foundWaxedItems + 1
                         
-                        -- If 'W' is a table, we open it up!
-                        if type(item.W) == "table" then
-                            foundWaxedItems = foundWaxedItems + 1
+                        -- Limit to just 2 items to prevent massive lag
+                        if foundWaxedItems > 2 then break end 
+                        
+                        printLine("========================", Color3.fromRGB(100, 100, 255))
+                        printLine("🐝 " .. itemName, Color3.fromRGB(255, 200, 100))
+                        
+                        for slotNum, waxData in pairs(item.W) do
+                            printLine("  Slot [" .. tostring(slotNum) .. "]:", Color3.fromRGB(150, 200, 255))
                             
-                            printLine("========================", Color3.fromRGB(100, 100, 255))
-                            printLine("🐝 " .. itemName .. " [" .. folderName .. "]", Color3.fromRGB(255, 200, 100))
-                            printLine("Wax Data (W) Contents:", Color3.fromRGB(150, 150, 150))
-                            
-                            -- Loop through everything inside the 'W' table
-                            local waxCount = 0
-                            for wKey, wVal in pairs(item.W) do
-                                waxCount = waxCount + 1
-                                local displayVal = tostring(wVal)
-                                if type(wVal) == "table" then displayVal = "{Nested Data}" end
-                                
-                                printLine("  [" .. tostring(wKey) .. "] = " .. displayVal, Color3.fromRGB(255, 150, 255))
-                            end
-                            
-                            if waxCount == 0 then
-                                printLine("  [Table is completely empty]", Color3.fromRGB(100, 100, 100))
+                            if type(waxData) == "table" then
+                                -- Open up the nested table!
+                                for deepKey, deepVal in pairs(waxData) do
+                                    local displayVal = tostring(deepVal)
+                                    if type(deepVal) == "table" then displayVal = "{...}" end
+                                    printLine("    " .. tostring(deepKey) .. " = " .. displayVal, Color3.fromRGB(150, 255, 150))
+                                end
+                            else
+                                printLine("    Value: " .. tostring(waxData), Color3.fromRGB(255, 150, 150))
                             end
                         end
-                        
                     end
                 end
             end
         end
         
         if foundWaxedItems == 0 then
-            printLine("No Waxed Beequips found in your inventory!", Color3.fromRGB(255, 50, 50))
-            printLine("Try waxing an item and running this again.")
+            printLine("No Waxed Beequips found!", Color3.fromRGB(255, 50, 50))
         end
     else
-        printLine("Failed to read statCache.Beequips", Color3.fromRGB(255, 50, 50))
+        printLine("Failed to read data.", Color3.fromRGB(255, 50, 50))
     end
 end)
