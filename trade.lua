@@ -1,10 +1,10 @@
 -- ==========================================
--- 🔎 BSS MAGNIFYING GLASS (Targeted Table Dumper)
+-- 🔬 BSS ARRAY CRACKER (Item Inspector)
 -- ==========================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
-local GUI_NAME = "BSS_Magnifying_Glass"
+local GUI_NAME = "BSS_Array_Cracker"
 pcall(function()
     local target = gethui and gethui() or CoreGui
     if target:FindFirstChild(GUI_NAME) then target[GUI_NAME]:Destroy() end
@@ -14,8 +14,8 @@ local sg = Instance.new("ScreenGui", gethui and gethui() or CoreGui)
 sg.Name = GUI_NAME
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 350, 0, 400)
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
+mainFrame.Size = UDim2.new(0, 350, 0, 450)
+mainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Draggable = true
 
@@ -23,7 +23,7 @@ local header = Instance.new("TextLabel", mainFrame)
 header.Size = UDim2.new(1, 0, 0, 30)
 header.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
-header.Text = " 🔎 Beequips Raw Data Dump"
+header.Text = " 🔬 Inspecting Storage Items"
 header.TextXAlignment = Enum.TextXAlignment.Left
 
 local closeBtn = Instance.new("TextButton", header)
@@ -59,34 +59,33 @@ task.spawn(function()
         return require(ReplicatedStorage:WaitForChild("ClientStatCache")):Get()
     end)
     
-    if success and statCache and statCache.Beequips then
+    if success and statCache and statCache.Beequips and statCache.Beequips.Storage then
+        local storageArray = statCache.Beequips.Storage
         local itemCount = 0
         
-        -- Loop through the Beequips table
-        for guid, data in pairs(statCache.Beequips) do
+        for index, itemData in pairs(storageArray) do
             itemCount = itemCount + 1
-            if itemCount > 5 then break end -- Only dump the first 5 to prevent lag
+            if itemCount > 3 then break end -- Only dump the first 3 items so it's easy to read
             
             printLine("========================", Color3.fromRGB(100, 100, 255))
-            printLine("GUID: " .. tostring(guid), Color3.fromRGB(255, 150, 50))
+            printLine("ITEM INDEX: [" .. tostring(index) .. "]", Color3.fromRGB(255, 150, 50))
             
-            if type(data) == "table" then
-                -- Print every single key and value inside this item
-                for k, v in pairs(data) do
-                    local valStr = tostring(v)
-                    if type(v) == "table" then valStr = "[Nested Table]" end
-                    printLine("  [" .. tostring(k) .. "] = " .. valStr, Color3.fromRGB(150, 255, 150))
+            if type(itemData) == "table" then
+                -- Print every property inside this specific Beequip
+                for key, value in pairs(itemData) do
+                    local valStr = tostring(value)
+                    if type(value) == "table" then 
+                        valStr = "{...}" -- Don't open deeper tables yet, just show keys
+                    end
+                    printLine("  " .. tostring(key) .. " = " .. valStr, Color3.fromRGB(150, 255, 150))
                 end
-            else
-                printLine("  Data is a: " .. type(data), Color3.fromRGB(255, 100, 100))
-                printLine("  Value: " .. tostring(data))
             end
         end
         
         if itemCount == 0 then
-            printLine("Beequips table is empty! Do you have any?", Color3.fromRGB(255, 50, 50))
+            printLine("Your Storage array is empty! Put a Beequip in it.", Color3.fromRGB(255, 50, 50))
         end
     else
-        printLine("Failed to read statCache.Beequips", Color3.fromRGB(255, 50, 50))
+        printLine("Failed to read statCache.Beequips.Storage", Color3.fromRGB(255, 50, 50))
     end
 end)
