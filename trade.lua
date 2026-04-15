@@ -1,10 +1,10 @@
 -- ==========================================
--- 🏆 BSS INVENTORY SCANNER (FINAL REVISION)
+-- 🏆 BSS UNIVERSAL SCANNER (V5 OMNI-READER)
 -- ==========================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
-local GUI_NAME = "BSS_Final_Scanner"
+local GUI_NAME = "BSS_Omni_Scanner"
 pcall(function()
     local target = gethui and gethui() or CoreGui
     if target:FindFirstChild(GUI_NAME) then target[GUI_NAME]:Destroy() end
@@ -14,8 +14,8 @@ local sg = Instance.new("ScreenGui", gethui and gethui() or CoreGui)
 sg.Name = GUI_NAME
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 360, 0, 480)
-mainFrame.Position = UDim2.new(0.5, -180, 0.5, -240)
+mainFrame.Size = UDim2.new(0, 380, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -190, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -28,7 +28,7 @@ header.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 header.TextColor3 = Color3.fromRGB(255, 255, 255)
 header.Font = Enum.Font.GothamBold
 header.TextSize = 16
-header.Text = "🐝 BSS Beequip Scanner"
+header.Text = "🐝 BSS Universal Omni-Scanner"
 Instance.new("UICorner", header).CornerRadius = UDim.new(0, 8)
 
 local closeBtn = Instance.new("TextButton", header)
@@ -47,7 +47,7 @@ scanBtn.Position = UDim2.new(0, 10, 0, 50)
 scanBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
 scanBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 scanBtn.Font = Enum.Font.GothamBold
-scanBtn.Text = "LOAD INVENTORY"
+scanBtn.Text = "LOAD ALL INVENTORIES"
 Instance.new("UICorner", scanBtn).CornerRadius = UDim.new(0, 6)
 
 -- Scrolling List
@@ -64,8 +64,8 @@ local layout = Instance.new("UIListLayout", scrollFrame)
 layout.Padding = UDim.new(0, 5)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- Render Item to UI
-local function addListItem(name, potential, guid)
+-- Render Item to UI (Now includes Location!)
+local function addListItem(name, potential, guid, location)
     local itemFrame = Instance.new("Frame", scrollFrame)
     itemFrame.Size = UDim2.new(1, -10, 0, 65)
     itemFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
@@ -79,7 +79,7 @@ local function addListItem(name, potential, guid)
     nameLbl.Font = Enum.Font.GothamSemibold
     nameLbl.TextSize = 14
     nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-    nameLbl.Text = "🐝 " .. tostring(name)
+    nameLbl.Text = "🐝 " .. tostring(name) .. " [" .. tostring(location) .. "]"
     
     local potLbl = Instance.new("TextLabel", itemFrame)
     potLbl.Size = UDim2.new(1, -10, 0.3, 0)
@@ -102,7 +102,9 @@ local function addListItem(name, potential, guid)
     guidLbl.Text = "GUID: " .. tostring(guid)
 end
 
--- Scan Logic utilizing our discovered cipher keys
+-- ==========================================
+-- ⚙️ The Omni-Scan Logic
+-- ==========================================
 scanBtn.MouseButton1Click:Connect(function()
     for _, child in pairs(scrollFrame:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
@@ -115,31 +117,40 @@ scanBtn.MouseButton1Click:Connect(function()
         return require(ReplicatedStorage:WaitForChild("ClientStatCache")):Get()
     end)
     
-    if success and statCache and statCache.Beequips and statCache.Beequips.Storage then
+    if success and statCache and statCache.Beequips then
         local foundItems = 0
-        local storageArray = statCache.Beequips.Storage
         
-        for index, item in pairs(storageArray) do
-            if type(item) == "table" then
-                -- The master cipher in action!
-                local itemName = item.T or "Unknown Beequip"
-                local itemGuid = item.S or "No-GUID-Attached"
-                
-                -- Format the floating point Quality/Potential to 4 decimal places for clean reading
-                local rawQuality = item.Q or 0
-                local itemPotential = string.format("%.4f", rawQuality)
-                
-                addListItem(itemName, itemPotential, itemGuid)
-                foundItems = foundItems + 1
+        -- Loop through EVERY folder inside Beequips (Storage, Case, Permanents, etc.)
+        for folderName, folderData in pairs(statCache.Beequips) do
+            
+            -- If the folder is a table, look inside it
+            if type(folderData) == "table" then
+                for index, item in pairs(folderData) do
+                    
+                    -- Check if this specific item has the "T" (Type) cipher we discovered
+                    if type(item) == "table" and item.T then
+                        local itemName = item.T or "Unknown Beequip"
+                        -- Sometimes Onett uses 'IT' instead of 'S' in different cases
+                        local itemGuid = item.S or item.IT or "No-GUID-Attached"
+                        
+                        -- Format the Quality
+                        local rawQuality = item.Q or 0
+                        local itemPotential = string.format("%.4f", rawQuality)
+                        
+                        -- Add it to UI, passing the folderName as the location!
+                        addListItem(itemName, itemPotential, itemGuid, folderName)
+                        foundItems = foundItems + 1
+                    end
+                end
             end
         end
         
         if foundItems == 0 then
-            addListItem("System", "N/A", "Your storage array is completely empty.")
+            addListItem("System", "N/A", "Empty.", "System")
         end
     else
-        addListItem("Error", "N/A", "Failed to reach statCache.Beequips.Storage")
+        addListItem("Error", "N/A", "Failed to reach statCache.Beequips", "Error")
     end
     
-    scanBtn.Text = "LOAD INVENTORY"
+    scanBtn.Text = "LOAD ALL INVENTORIES"
 end)
