@@ -1,5 +1,5 @@
 -- ==========================================
--- 🤿 BSS RECURSIVE DEEP-DIVER
+-- 🤿 BSS RECURSIVE DEEP-DIVER (Syntax Fixed)
 -- ==========================================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
@@ -61,8 +61,8 @@ local function printLine(text, color)
     lbl.Text = " " .. tostring(text)
 end
 
--- The IDs we are hunting
-local targetIDs = {11 = true, 12 = true, 13 = true, 16 = true}
+-- FIXED SYNTAX HERE: 
+local targetIDs = {[11] = true, [12] = true, [13] = true, [16] = true}
 
 -- Recursive search function
 local function recursiveSearch(tbl, path, depth)
